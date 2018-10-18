@@ -1,7 +1,10 @@
 package cn.wjdiankong.hackcharles;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -16,30 +19,39 @@ public class CrackCharles {
 
     private final static String PKGNAME = "com.xk72.charles";
     private final static String CLASSNAME = "kKPk";
-    private final static String JAR_DIR = "E:/GitHub/CrackCharles/";//替换成你的目录
-    private final static String JAR_NAME = "charles.jar";//替换成你的本地目录
+    private final static String JAR_DIR = "E:/GitHub/CrackCharles/";//替换成你的目录（当前项目目录）
+    private final static String JAR_NAME = "charles_src.jar";//替换成你的本地目录(当前项目目录下，原始的charles.jar文件)
+    private final static String JAR_NAME_BUILD = "charles.jar";//（也放在当前项目目录下，最终替换生成的jar 文件,使用两个目录，否则是因为文件句柄未释放，导致操作不成功）
 
     public static void main(String[] args) throws Exception {
 
-        //经测试，这两个方法不能一起执行，需分开执行，否则会失败
-        //方法一： 先执行：crackCharlesJar（）方法，2，再执行 execmd()方法即可；
-        //方法二：在cmd中使用命令操作：jar uvf charles.jar com/xk72/charles/kKPk.class
+        crackCharlesJar();//破解Charles
+        //      execmd();//其他命令执行测试
 
-//      crackCharlesJar();
-        execmd();
+
     }
 
     private static void execmd() throws Exception {
 
-        String classPath = PKGNAME.replace(".", "/") + "/" + CLASSNAME + ".class";
-        Process process = Runtime.getRuntime().exec("jar uvf " + JAR_NAME + " "  + classPath);
-        System.out.println("jar uvf " + JAR_NAME + " " + classPath);
-        int status = process.waitFor();
-        if (status == 0) {
-            System.out.println("执行成功：status： " + status);
-        } else {
-            System.out.println("执行失败：status： " + status);
+        String dir = "C:/Users/justi/Desktop/imsi.apk";
+
+        System.out.println("apktool d " + dir);
+        Process process = Runtime.getRuntime().exec("cmd /c apktool d imsi.apk");//出现找不到目录，需要指定（cmd /c）
+
+        StringBuffer stringBuffer = new StringBuffer();
+        InputStream is = process.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            stringBuffer.append(line + "\n");
         }
+        int status = process.waitFor();
+        is.close();
+        reader.close();
+        process.destroy();
+
+        System.out.println("status = " + status);
+        System.out.println("stringBuffer = " + stringBuffer);
     }
 
     private static void crackCharlesJar() {
@@ -57,7 +69,7 @@ public class CrackCharles {
                 CtMethod ctMethod = ctClass.getDeclaredMethod("lcJx", null);
                 ctMethod.setBody("{return true;}");
                 ctMethod = ctClass.getDeclaredMethod("JZlU", null);
-                ctMethod.setBody("{return \"Charles is success for crack !!!!!\";}");
+                ctMethod.setBody("{return \"Charles is success for crack 300 year\";}");
                 return ctClass.toBytecode();
             }
         }).map(new Function<byte[], String>() { // 输入字节码数组，保存文件，输出文件路径
@@ -77,11 +89,11 @@ public class CrackCharles {
         }).map(new Function<String, Integer>() { //输入class路径，jar uvf命令替换jar
             @Override
             public Integer apply(String s) throws Exception {
-                //                String classPath = PKGNAME.replace(".", "/") + "/" + CLASSNAME + ".class";
-                //                Process process = Runtime.getRuntime().exec("jar uvf " + JAR_DIR + JAR_NAME + " " + JAR_DIR + classPath);
-                //                 System.out.println("jar uvf " + JAR_DIR + JAR_NAME + " " + JAR_DIR + classPath);
-                //                int status = process.waitFor();
-                return 0;
+                String classPath = PKGNAME.replace(".", "/") + "/" + CLASSNAME + ".class";
+                Process process = Runtime.getRuntime().exec("cmd.exe /c jar uvf " + JAR_NAME_BUILD + " " + classPath);
+                System.out.println("cmd /c jar uvf " + JAR_NAME_BUILD + " " + classPath);
+                int status = process.waitFor();
+                return status;
             }
         }).subscribe(new Consumer<Integer>() {
             @Override
